@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAU Monsters - Catch Monster</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(#317940 0%, #103315 100%);
+            color: white;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+        }
+
+        .burger {
+            background: none; border: none; cursor: pointer;
+            display: flex; flex-direction: column; gap: 5px;
+            margin-right: 16px;
+        }
+        .burger span {
+            width: 24px; height: 2px;
+            background-color: white;
+        }
+
+        .layout { display: flex; margin-top: 60px; }
+
+        .sidebar { width: 260px; background: white; border-right: 1px solid #dde8dd; padding: 30px 20px; flex-shrink: 0; transition: width 0.3s ease, padding 0.3s ease; }
+        .sidebar.collapsed { width: 0; padding: 30px 0; overflow: hidden; }
+        .sidebar h2 { font-size: 17px; font-weight: 700; color: #1a4d1a; margin-bottom: 6px; }
+        .sidebar p { font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 28px; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #333; font-size: 14px; font-weight: 500; margin-bottom: 4px; transition: background 0.2s, color 0.2s; }
+        .sidebar-nav a:hover { background: #e8f5e9; color: #2e7d32; }
+        .sidebar-nav a.active { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+
+
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 500px;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <button class="burger" id="burgerBtn">
+        <span></span><span></span><span></span>
+    </button>
+    <h2>Catch Monster</h2>
+</header>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar">
+        <h2>Monster Control Center</h2>
+        <p>Manage monster records, catch monsters, and view monster areas.</p>
+        <nav class="sidebar-nav">
+            <a href="/dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+            <a href="/addMonster.html"><span class="nav-icon">➕</span> Add Monster</a>
+            <a href="/catchMonster.html"><span class="nav-icon">🎯</span> Catch Monster</a>
+            <a href="/editMonster.html" class="active"><span class="nav-icon">✏️</span> Edit Monster</a>
+            <a href="/deleteMonster.html"><span class="nav-icon">🗑️</span> Delete Monster</a>
+            <a href="#"><span class="nav-icon">🏆</span> Top Hunters</a>
+            <a href="/map.html"><span class="nav-icon">🗺️</span> Monster Map</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <div class="card">
+            <h2>🎯 Catch a Monster</h2>
+
+            <div id="map"></div>
+
+            <input type="text" id="latitude" placeholder="Latitude">
+            <input type="text" id="longitude" placeholder="Longitude">
+
+            <button id="useGPS">📍 Use My Location</button>
+            <button id="checkBtn">Check for Monster</button>
+
+            <div id="result" class="message"></div>
+        </div>
+    </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([15.1452, 120.5919], 15);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+    let marker;
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        if (marker) marker.setLatLng(e.latlng);
+        else marker = L.marker(e.latlng).addTo(map);
+    });
+
+    document.getElementById('useGPS').onclick = () => {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+
+            map.setView([lat, lng], 16);
+
+            if (marker) marker.setLatLng([lat, lng]);
+            else marker = L.marker([lat, lng]).addTo(map);
+        }, () => {
+            alert("GPS Error");
+        });
+    };
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const dLat = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+
+        const a =
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1*Math.PI/180) *
+            Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLon/2) *
+            Math.sin(dLon/2);
+
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    document.getElementById('checkBtn').onclick = async () => {
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lng = parseFloat(document.getElementById('longitude').value);
+        const result = document.getElementById('result');
+
+        if (!lat || !lng) {
+            result.textContent = "❌ Enter coordinates first";
+            result.className = "message error";
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/monsters');
+            const monsters = await res.json();
+
+            let found = null;
+
+            for (let m of monsters) {
+                const dist = getDistance(lat, lng, m.spawn_latitude, m.spawn_longitude);
+
+                if (dist <= m.spawn_radius_meters) {
+                    found = m;
+                    break;
+                }
+            }
+
+            if (found) {
+                console.log('_________________________________')
+                const user = JSON.parse(sessionStorage.getItem('user'));
+
+                const monster_id = String(found.monster_id)
+                //console.log(`/api/monstercatches?player_id=${user.player_id}&monster_id=${monster_id}`)
+                const resp = await fetch(`/api/monstercatches?player_id=${user.player_id}&monster_id=${monster_id}`);
+                const data = await resp.json();
+
+                const resultEl = document.getElementById("result"); // your DOM element
+                if (data.count === 0) {
+                    console.log(`/api/monstercatches?player_id=${user.player_id}&monster_id=${found.monster_id}&latitude=${found.spawn_latitude}&longitude=${found.spawn_longitude}`)
+                    resultEl.textContent = `🎉 You caught ${found.monster_name}!`;
+                    resultEl.className = "message success";
+
+                    await fetch(`/api/monstercatches`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            player_id: user.player_id,
+                            monster_id: found.monster_id,
+                            latitude: found.spawn_latitude,
+                            longitude: found.spawn_longitude
+                        })
+                    });
+                } else {
+                    resultEl.textContent = `You already caught this monster.`;
+                    resultEl.className = "message error";
+                }
+            } else {
+                result.textContent = "😢 No monster found here.";
+                result.className = "message error";
+            }
+
+        } catch (err) {
+            result.textContent = "❌ Error checking monsters";
+            result.className = "message error";
+            console.log(err)
+        }
+    };
+</script>
+
+</body>
+</html>

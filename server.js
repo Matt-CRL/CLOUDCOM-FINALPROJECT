@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
 app.use('/api/monsters', require('./routes/monsters'));
+app.use('/api/monstercatches', require('./routes/monstercatches'));
 app.use('/api/catches', require('./routes/catches'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 
