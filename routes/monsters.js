@@ -8,16 +8,19 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const m = req.body;
-
-  await pool.query(
-    `INSERT INTO monsterstbl 
-    (monster_name, monster_type, spawn_latitude, spawn_longitude, spawn_radius_meters, picture_url)
-    VALUES (?, ?, ?, ?, ?, ?)`,
-    [m.monster_name, m.monster_type, m.spawn_latitude, m.spawn_longitude, m.spawn_radius_meters, m.picture_url]
-  );
-
-  res.json({ message: 'created' });
+  try {
+    const m = req.body;
+    await pool.query(
+      `INSERT INTO monsterstbl 
+      (monster_name, monster_type, spawn_latitude, spawn_longitude, spawn_radius_meters, picture_url)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [m.monster_name, m.monster_type, m.spawn_latitude, m.spawn_longitude, m.spawn_radius_meters, m.picture_url || null]
+    );
+    res.json({ message: 'created' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 router.put('/:id', async (req, res) => {
