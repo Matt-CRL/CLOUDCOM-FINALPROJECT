@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>HAU Monsters - Monster Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Shared Styles from dashboard.html */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f0; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(#317940 0%, #103315 100%);
+            color: white; height: 60px; display: flex; align-items: center;
+            padding: 0 20px; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* The Missing Burger Button Styles */
+        .burger {
+            background: none; border: none; cursor: pointer;
+            display: flex; flex-direction: column; gap: 5px;
+            padding: 4px; margin-right: 16px;
+        }
+        .burger span {
+            display: block; width: 24px; height: 2px;
+            background-color: white; border-radius: 2px; transition: all 0.3s ease;
+        }
+
+        .header-title { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        .header-user { margin-left: auto; font-size: 14px; display: flex; align-items: center; gap: 12px; }
+        .logout-btn { 
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); 
+            color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; 
+        }
+
+        .layout { display: flex; margin-top: 60px; min-height: calc(100vh - 60px); }
+        
+        /* Sidebar Toggle Logic */
+        .sidebar {
+            width: 260px; background: white; border-right: 1px solid #dde8dd;
+            padding: 30px 20px; flex-shrink: 0; transition: width 0.3s ease, padding 0.3s ease;
+        }
+        .sidebar.collapsed { width: 0; padding: 30px 0; overflow: hidden; }
+
+        .sidebar h2 { font-size: 17px; font-weight: 700; color: #1a4d1a; margin-bottom: 6px; }
+        .sidebar p { font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 28px; }
+        
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            border-radius: 8px; text-decoration: none; color: #333; font-size: 14px;
+            font-weight: 500; margin-bottom: 4px; transition: 0.2s;
+        }
+        .sidebar-nav a:hover { background: #e8f5e9; color: #2e7d32; }
+        .sidebar-nav a.active { background: #e8f5e9; color: #2e7d32; }
+
+        /* Main Content */
+        .main { flex: 1; padding: 36px 40px; display: flex; flex-direction: column; }
+        .main-header { margin-bottom: 20px; }
+        .main-header h1 { font-size: 26px; font-weight: 700; color: #1a4d1a; }
+        
+        .map-container {
+            flex: 1; background: white; border-radius: 12px; padding: 15px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07); min-height: 500px;
+            position: relative; border-top: 4px solid #4CAF50;
+        }
+        #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; }
+
+        /* Detection Effects */
+        .torch-flash { animation: flash-white 0.5s infinite; }
+        @keyframes flash-white { 0%, 100% { background: white; } 50% { background: #f4f4f4; } }
+        .gps-status { font-size: 12px; color: #888; margin-top: 10px; }
+    </style>
+</head>
+<body id="app-body">
+
+    <header class="header">
+        <button class="burger" id="burgerBtn" title="Toggle sidebar">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <span class="header-title">HAU Monsters</span>
+        <div class="header-user">
+            <span id="welcomeText">Welcome, Trainer</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <h2>Monster Control Center</h2>
+            <p>Manage monster records, catch monsters, and view monster areas.</p>
+            <nav class="sidebar-nav">
+                <a href="/dashboard.html"><span class="nav-icon">🏠</span> Dashboard</a>
+                <a href="#"><span class="nav-icon">➕</span> Add Monster</a>
+                <a href="#"><span class="nav-icon">🎯</span> Catch Monster</a>
+                <a href="#"><span class="nav-icon">✏️</span> Edit Monster</a>
+                <a href="#"><span class="nav-icon">🗑️</span> Delete Monster</a>
+                <a href="#"><span class="nav-icon">🏆</span> Top Hunters</a>
+                <a href="/map.html" class="active"><span class="nav-icon">🗺️</span> Monster Map</a>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <div class="main-header">
+                <h1>Live Monster Radar</h1>
+                <p class="gps-status" id="status">Waiting for GPS signal...</p>
+            </div>
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Toggle Sidebar Logic
+        document.getElementById('burgerBtn').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        // Auth and Session
+        const user = JSON.parse(sessionStorage.getItem('user'));
+        if (!user) {
+            window.location.href = '/signup.html';
+        } else {
+            document.getElementById('welcomeText').textContent = `Welcome, ${user.player_name}`;
+        }
+
+        function logout() {
+            sessionStorage.removeItem('user');
+            window.location.href = '/signup.html';
+        }
+
+        // Map Initialization
+        const map = L.map('map').setView([15.1452, 120.5919], 17);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO'
+        }).addTo(map);
+
+        let userLat, userLng;
+        const userMarker = L.circle([0, 0], { radius: 12, color: '#2e7d32', fillOpacity: 0.7 }).addTo(map);
+
+        async function fetchMonsters() {
+            try {
+                const res = await fetch('/api/monsters');
+                const monsters = await res.json();
+                monsters.forEach(m => {
+                    L.marker([m.spawn_latitude, m.spawn_longitude])
+                        .addTo(map)
+                        .bindPopup(`<b>${m.monster_name}</b><br>${m.monster_type}`);
+                    L.circle([m.spawn_latitude, m.spawn_longitude], {
+                        radius: m.spawn_radius_meters,
+                        color: '#ce1212', weight: 1, fillOpacity: 0.1
+                    }).addTo(map);
+                });
+            } catch (err) { console.error("DB Connection Error"); }
+        }
+
+        navigator.geolocation.watchPosition(pos => {
+            userLat = pos.coords.latitude;
+            userLng = pos.coords.longitude;
+            userMarker.setLatLng([userLat, userLng]);
+            document.getElementById('status').innerText = `GPS Locked: ${userLat.toFixed(5)}, ${userLng.toFixed(5)}`;
+            autoDetect();
+        });
+
+        async function autoDetect() {
+            if (!userLat) return;
+            const res = await fetch('/api/catches/detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: userLat, longitude: userLng })
+            });
+            const data = await res.json();
+            if (data.success && data.detected.length > 0) {
+                triggerRequirements(data.detected[0].monster_name);
+            }
+        }
+
+        function triggerRequirements(name) {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            osc.connect(audioCtx.destination);
+            osc.start();
+            setTimeout(() => osc.stop(), 1000);
+
+            document.getElementById('app-body').classList.add('torch-flash');
+            setTimeout(() => document.getElementById('app-body').classList.remove('torch-flash'), 3000);
+        }
+
+        fetchMonsters();
+    </script>
+</body>
+</html>
