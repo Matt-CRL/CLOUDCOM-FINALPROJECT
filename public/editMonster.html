@@ -33,7 +33,7 @@
         .sidebar-nav a.active { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
         .sidebar-nav a .nav-icon { font-size: 18px; width: 24px; text-align: center; }
 
-        .main { flex: 1; padding: 36px 40px; display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; min-width: 0; }
+        .main { flex: 1; padding: 36px 40px; display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; min-width: 0; align-content: start; }
 
         .main-header { grid-column: 1 / -1; margin-bottom: 4px; }
         .main-header h1 { font-size: 26px; font-weight: 700; color: #1a4d1a; margin-bottom: 6px; }
@@ -61,9 +61,6 @@
 
         /* Form Panel */
         .form-panel { background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); border-top: 4px solid #4CAF50; }
-        .form-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: #bbb; font-size: 14px; gap: 10px; }
-        .form-placeholder span { font-size: 40px; }
-
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 6px; color: #555; font-weight: 500; font-size: 14px; }
         input[type="text"], input[type="number"] {
@@ -84,7 +81,7 @@
         .message.success { background: #e8f5e9; color: #2e7d32; display: block; }
         .message.error { background: #ffebee; color: #c62828; display: block; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
             .main { grid-template-columns: 1fr; }
             .main-header { grid-column: 1; }
             .monster-list { max-height: 260px; }
@@ -137,12 +134,7 @@
 
             <!-- Edit Form -->
             <div class="form-panel" id="formPanel">
-                <div class="form-placeholder" id="formPlaceholder">
-                    <span>✏️</span>
-                    Select a monster to edit
-                </div>
-
-                <form id="editForm" style="display:none;">
+                <form id="editForm">
                     <div class="form-group">
                         <label for="monster_name">Monster Name</label>
                         <input type="text" id="monster_name" required>
@@ -209,6 +201,8 @@
                         <button class="edit-btn" title="Edit" onclick="loadEdit(${m.monster_id}, '${m.monster_name.replace(/'/g,"\\'")}', '${m.monster_type.replace(/'/g,"\\'")}', ${m.spawn_latitude}, ${m.spawn_longitude}, ${m.spawn_radius_meters})">✏️</button>
                     </div>
                 `).join('');
+                const f = monsters[0];
+                loadEdit(f.monster_id, f.monster_name, f.monster_type, f.spawn_latitude, f.spawn_longitude, f.spawn_radius_meters);
             } catch {
                 list.innerHTML = '<div class="empty">Failed to load monsters.</div>';
             }
@@ -235,9 +229,6 @@
             else spawnMarker = L.marker(latlng).addTo(spawnMap);
             spawnMap.setView(latlng, 16);
 
-            // Show form
-            document.getElementById('formPlaceholder').style.display = 'none';
-            document.getElementById('editForm').style.display = 'block';
             document.getElementById('message').className = 'message';
             setTimeout(() => spawnMap.invalidateSize(), 50);
         }
