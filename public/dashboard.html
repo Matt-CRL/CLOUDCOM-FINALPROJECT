@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAU Monsters - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(#317940 0%, #103315 100%);
+            color: white;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .burger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 4px;
+            margin-right: 16px;
+        }
+
+        .burger span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background-color: white;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .header-user {
+            margin-left: auto;
+            font-size: 14px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: white;
+            border-right: 1px solid #dde8dd;
+            padding: 30px 20px;
+            flex-shrink: 0;
+            transition: width 0.3s ease, padding 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            padding: 30px 0;
+            overflow: hidden;
+        }
+
+        .sidebar h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a4d1a;
+            margin-bottom: 6px;
+        }
+
+        .sidebar p {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .sidebar-nav a:hover {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .sidebar-nav a .nav-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 36px 40px;
+        }
+
+        .main-header {
+            margin-bottom: 32px;
+        }
+
+        .main-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a4d1a;
+            margin-bottom: 6px;
+        }
+
+        .main-header p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-top: 4px solid #4CAF50;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(76,175,80,0.2);
+        }
+
+        .card-icon {
+            font-size: 36px;
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a4d1a;
+        }
+
+        .card p {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .card-btn {
+            margin-top: auto;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            align-self: flex-start;
+        }
+
+        .card-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sidebar {
+                display: none;
+            }
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            .main {
+                padding: 24px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <button class="burger" id="burgerBtn" title="Toggle sidebar">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <span class="header-title">HAU Monsters</span>
+        <div class="header-user">
+            <span id="welcomeText">Welcome, Trainer</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </header>
+
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <h2>Monster Control Center</h2>
+            <p>Manage monster records, catch monsters, and view monster areas.</p>
+            <nav class="sidebar-nav">
+                <a href="#"><span class="nav-icon">➕</span> Add Monster</a>
+                <a href="#"><span class="nav-icon">🎯</span> Catch Monster</a>
+                <a href="#"><span class="nav-icon">✏️</span> Edit Monster</a>
+                <a href="#"><span class="nav-icon">🗑️</span> Delete Monster</a>
+                <a href="#"><span class="nav-icon">🏆</span> Top Hunters</a>
+                <a href="#"><span class="nav-icon">🗺️</span> Monster Map</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="main-header">
+                <h1>Monster Control Center</h1>
+                <p>Manage monster records, catch monsters, and view monster areas.</p>
+            </div>
+
+            <div class="cards-grid">
+
+                <div class="card">
+                    <div class="card-icon">➕</div>
+                    <h3>Add Monster</h3>
+                    <p>Register a new monster into the system with its details and attributes.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🎯</div>
+                    <h3>Catch Monster</h3>
+                    <p>Log a monster catch and add it to your collection.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">✏️</div>
+                    <h3>Edit Monster</h3>
+                    <p>Update existing monster records and modify their attributes.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🗑️</div>
+                    <h3>Delete Monster</h3>
+                    <p>Remove a monster record permanently from the database.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🏆</div>
+                    <h3>Top Monster Hunters</h3>
+                    <p>View the leaderboard of the best monster hunters in the game.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🗺️</div>
+                    <h3>Monster Map</h3>
+                    <p>Explore areas and discover where different monsters can be found.</p>
+                    <button class="card-btn">Coming Soon</button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Redirect to login if not authenticated
+        const user = JSON.parse(sessionStorage.getItem('user'));
+        if (!user) {
+            window.location.href = '/signup.html';
+        } else {
+            document.getElementById('welcomeText').textContent = `Welcome, ${user.player_name}`;
+        }
+
+        // Burger toggle
+        document.getElementById('burgerBtn').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            sessionStorage.removeItem('user');
+            window.location.href = '/signup.html';
+        });
+    </script>
+</body>
+</html>

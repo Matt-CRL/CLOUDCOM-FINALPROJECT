@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static files from the public folder (one level up)
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
@@ -19,7 +19,7 @@ app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Serve signup page
 app.get('/signup', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'signup.html'));
+  res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 });
 
 app.get('/', (req, res) => {
