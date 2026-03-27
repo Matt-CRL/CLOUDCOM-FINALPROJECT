@@ -73,25 +73,29 @@ router.post('/detect', async (req, res) => {
 //
 router.post('/catch', async (req, res) => {
   try {
-    const { player_id, monster_id, location_id, latitude, longitude } = req.body;
+    const { player_id, monster_id, latitude, longitude } = req.body;
 
-    if (!player_id || !monster_id || !location_id) {
-      return res.status(400).json({
-        error: 'Missing required fields'
-      });
+    if (!player_id || !monster_id) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const [result] = await pool.query(
-      `INSERT INTO monster_catchestbl
-      (player_id, monster_id, location_id, latitude, longitude)
-      VALUES (?, ?, ?, ?, ?)`,
-      [player_id, monster_id, location_id, latitude, longitude]
+    // Check monster still exists
+    const [rows] = await pool.query('SELECT * FROM monsterstbl WHERE monster_id=?', [monster_id]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Monster already caught.' });
+    }
+
+    // Save this player's catch record
+    await pool.query(
+      `INSERT INTO monster_catchestbl (player_id, monster_id, location_id, latitude, longitude) VALUES (?, ?, ?, ?, ?)`,
+      [player_id, monster_id, 1, latitude, longitude]
     );
 
-    res.json({
-      message: 'Monster caught successfully',
-      catch_id: result.insertId
-    });
+    // Delete monster (FK: delete other players' catch refs first, keep this player's)
+    await pool.query('DELETE FROM monster_catchestbl WHERE monster_id=? AND player_id!=?', [monster_id, player_id]);
+    await pool.query('DELETE FROM monsterstbl WHERE monster_id=?', [monster_id]);
+
+    res.json({ message: 'Monster caught successfully' });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
